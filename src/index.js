@@ -1,30 +1,57 @@
-import React, { useContext } from "react";
-import ReactDOM from "react-dom";
+import React, { Component, useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 
-const MyContext = React.createContext();
-
+// useState - управление состоянием
+// useEffect - регистрирует ф-цию, у к-й могут быть побочные эффекты
+// useEffect  - появляется когда компонент впервые отрисовывается на страниуе и когда обновляется
 const App = () => {
-    return (
-        <MyContext.Provider value="Hello World">
-            <Child />
-        </MyContext.Provider>
-    );
+    const [value, setValue] = useState(0);
+    const [visible, setVisible] = useState(true);
+
+    if (visible) {
+        return (
+            <div>
+                <button
+                    onClick={() => setValue((v) => v + 1)}> +</button>
+                <button
+                    onClick={() => setVisible(false)}>hide</button>
+                <ClassCounter value={value} />
+                <HookCounter value={value} />
+            </div>
+        );
+    } else {
+        return <button onClick={() => setVisible(true)}>show</button>
+    }
 };
 
-const Child = () => {
+const HookCounter = ({ value }) => {
 
-    const value = useContext(MyContext)
-    // return (
-    //     <MyContext.Consumer>
-    //         {(value) => {
-    //             return (
-    //                 <p> {value}</p>
-    //             )
-    //         }}
-    //     </MyContext.Consumer>
-    // )
-    return <p>{value}</p>
-};
+    useEffect(() => {
+        console.log('useEffect()');
+        return () => console.log('clear')
+    }, [value])
+    return <p> {value}</p>
+}
 
-ReactDOM.render(<App />,
-    document.getElementById('root'));
+class ClassCounter extends Component {
+    componentDidMount() {
+        console.log('class: mount');
+    }
+    // показать счетчики
+
+    componentDidUpdate() {
+        console.log('class:update')
+    }
+    //увеличение кол-ва счетчиков
+
+    componentWillUnmount() {
+        console.log('class: unmount')
+    }
+    // скрывать счетчики
+
+    render() {
+        return <p>{this.props.value}</p>
+    }
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
