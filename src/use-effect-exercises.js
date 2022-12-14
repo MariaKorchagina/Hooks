@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { ReactDOM } from "react";
-import Notification from '../src/index'
+import ReactDOM from "react-dom";
 
 const App = () => {
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState(1);
     const [visible, setVisible] = useState(true);
 
     if (visible) {
@@ -23,10 +22,22 @@ const App = () => {
 };
 
 const PlanetInfo = ({ id }) => {
+
+    const [name, setName] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        //cancelled - очищает данные, если с ними больше не нужно работать
+        fetch(`http://swapi.dev/api/planets/${id}`)
+            .then(res => res.json())
+            // .then(data => console.log(data.name));
+            .then(data => !cancelled && setName(data.name));
+        return () => cancelled = true;
+    }, [id])
+
     return (
-        <div>{id} - Planet Name</div>
+        <div>{id} - {name}</div>
     )
 }
-
 ReactDOM.render(<App />,
     document.getElementById('root'));
