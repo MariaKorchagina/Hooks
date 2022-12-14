@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import ReactDOM from "react-dom";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import ReactDOM from "react-dom/client"
 
 const App = () => {
     const [value, setValue] = useState(1);
@@ -21,28 +21,88 @@ const App = () => {
     }
 };
 
-const usePlanetInfo = (id) => {
-    const [name, setName] = useState(null);
+const getPlanet = (id) => {
+    return fetch(`http://swapi.dev/api/planets/${id}`)
+        .then(res => res.json())
+        // .then(data => console.log(data.name));
+        .then(data => data);
+}
+
+const useRequest = (request) => {
+
+    const initialState = useMemo(() => ({
+        data: null,
+        loading: true,
+        error: null
+    }), []);
+
+    //useMemo - работает как useCallback, только useCallback - кэширует само значение, а useMemo кэширует результат работы этой ф-ции
+
+    const [dataState, setDataState] = useState(initialState);
 
     useEffect(() => {
+        setDataState(initialState)
         let cancelled = false;
         //cancelled - очищает данные, если с ними больше не нужно работать
-        fetch(`http://swapi.dev/api/planets/${id}`)
-            .then(res => res.json())
+        request()
+            .then(data => !cancelled && setDataState({
+                data,
+                loading: false,
+                error: null
+            }))
             // .then(data => console.log(data.name));
-            .then(data => !cancelled && setName(data.name));
-        return () => cancelled = true;
-    }, [id]);
 
-    return name;
+            .catch(error => !cancelled && setDataState({
+                data: null,
+                loading: false,
+                error
+            }))
+        return () => cancelled = true;
+    }, [request, initialState]);
+
+    return dataState;
+}
+
+//useRequest - хук, к-й может получать данные из любой асинхронной ф-ции (любая ф-ция , к-я возвращает промис)
+
+const usePlanetInfo = (id) => {
+    //useCallback - делает так, чтобы ф-ция не пересоздавалась заново, если id не изменилось
+    const request = useCallback(() => getPlanet(id), [id])
+    // const request = () => getPlanet(id);
+    return useRequest(request);
+    // const [name, setName] = useState(null);
+
+    // useEffect(() => {
+    //     let cancelled = false;
+    //     //cancelled - очищает данные, если с ними больше не нужно работать
+    //     fetch(`http://swapi.dev/api/planets/${id}`)
+    //         .then(res => res.json())
+    //         // .then(data => console.log(data.name));
+    //         .then(data => !cancelled && setName(data.name));
+    //     return () => cancelled = true;
+    // }, [id]);
+
+    // return name;
 }
 
 const PlanetInfo = ({ id }) => {
-    const name = usePlanetInfo(id);
+    const { data, loading, error } = usePlanetInfo(id);
 
+    if (error) {
+        return <div>Something is wrong</div>
+    }
+
+    if (loading) {
+        return <div>loading...</div>
+    }
     return (
-        <div>{id} - {name}</div>
+        <div>{id} - {data.name}</div>
     )
 }
-ReactDOM.render(<App />,
-    document.getElementById('root'));
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
+);
